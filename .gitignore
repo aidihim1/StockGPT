@@ -1,0 +1,33 @@
+# ── Credentials — NEVER upload these ──
+config.py
+
+# ── Large data files ──
+dataset.csv
+raw_prices/
+raw_prices_old/
+*.pt
+
+# ── Generated outputs ──
+forecasts_*.csv
+backtest_results_*.csv
+backtest_summary_*.csv
+fama_macbeth_*.csv
+actual_returns_*.csv
+deep_*.csv
+training_log.csv
+combined_returns.csv
+returns_dataset.csv
+returns_old.csv
+
+# ── Logs ──
+*.log
+logs/
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# ── Checkpoints ──
+checkpoints/
