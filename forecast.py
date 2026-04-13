@@ -330,6 +330,18 @@ def run_forecast(args):
 
     rankings = pd.DataFrame(results)
 
+    # Monday filter: next trading day is Monday -> exclude high vol_ratio stocks
+    # (weekend gap risk makes high-volatility small caps unpredictable)
+    next_trading_day = datetime.now()
+    for _ in range(7):
+        next_trading_day += timedelta(days=1)
+        if next_trading_day.weekday() < 5:
+            break
+    if next_trading_day.weekday() == 0:  # Monday
+        before = len(rankings)
+        rankings = rankings[rankings["vol_ratio"] <= 1.5]
+        print(f"\n  [Monday filter] Removed {before - len(rankings)} high-vol stocks (vol_ratio > 1.5) to reduce weekend gap risk.")
+
     # Composite score = average adj_ret across all horizons
     adj_cols = [c for c in rankings.columns if c.startswith("adj_ret_")]
     rankings["composite_score"] = rankings[adj_cols].mean(axis=1)
