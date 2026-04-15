@@ -407,15 +407,32 @@ def ai_response(query: str) -> dict:
         bot = forecast_df.nlargest(n, "composite_rank")
         avg_l_prob = top["prob_up_1d"].mean()
         avg_s_prob = bot["prob_up_1d"].mean()
+
+        # Market regime filter
+        regime = forecast_df["regime"].iloc[0] if "regime" in forecast_df.columns else "neutral"
+        mkt_prob = forecast_df["market_prob_up_1d"].iloc[0] if "market_prob_up_1d" in forecast_df.columns else 50
+
+        if regime == "bull":
+            regime_note = f"<br><br><span style='color:#facc15;'>BULL DAY (market prob up: {mkt_prob:.0f}%) — Shorts skipped. Only longs recommended.</span>"
+            resp["stocks_short"] = []
+        elif regime == "bear":
+            regime_note = f"<br><br><span style='color:#facc15;'>BEAR DAY (market prob up: {mkt_prob:.0f}%) — Longs skipped. Only shorts recommended.</span>"
+            resp["stocks_long"] = []
+        else:
+            regime_note = ""
+
         resp["type"] = "long_short"
         resp["text"] = (
             f"Model rankings for <strong style='color:#60a5fa;'>{_next_label}</strong>.<br><br>"
             f"<strong style='color:#22c55e;'>Green = BUY</strong> &nbsp; <strong style='color:#ef4444;'>Red = AVOID</strong><br>"
             f"Avg P(Up {_next_td.strftime('%a')}): Longs <strong style='color:#22c55e;'>{avg_l_prob:.0f}%</strong> &nbsp;|&nbsp; "
             f"Shorts <strong style='color:#ef4444;'>{avg_s_prob:.0f}%</strong>"
+            f"{regime_note}"
         )
-        resp["stocks_long"]  = top[["stock","composite_rank","adj_ret_1d","adj_ret_5d","adj_ret_20d","prob_up_1d"]].to_dict("records")
-        resp["stocks_short"] = bot[["stock","composite_rank","adj_ret_1d","adj_ret_5d","adj_ret_20d","prob_up_1d"]].to_dict("records")
+        if regime != "bear":
+            resp["stocks_long"]  = top[["stock","composite_rank","adj_ret_1d","adj_ret_5d","adj_ret_20d","prob_up_1d"]].to_dict("records")
+        if regime != "bull":
+            resp["stocks_short"] = bot[["stock","composite_rank","adj_ret_1d","adj_ret_5d","adj_ret_20d","prob_up_1d"]].to_dict("records")
         return resp
 
     # ── BUY signals ─────────────────────────────────────────────────────────

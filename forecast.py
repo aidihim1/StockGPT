@@ -362,11 +362,41 @@ def run_forecast(args):
     display_cols = ["stock", "composite_rank"] + adj_cols + [f"prob_up_{horizons[-1]}d", "vol_ratio", "beta"]
     display_cols = [c for c in display_cols if c in rankings.columns]
 
-    print(f"\n=== Top {args.top_n} stocks (Long candidates) ===")
-    print(rankings[display_cols].head(args.top_n).to_string(index=False))
+    # Market regime filter
+    mkt_prob_up = mkt_metrics[1]["prob_up_pct"]  # 1-day market prob up
+    BULL_THRESHOLD = 55   # market strongly bullish -> skip shorts
+    BEAR_THRESHOLD = 42   # market strongly bearish -> skip longs
 
-    print(f"\n=== Bottom {args.top_n} stocks (Short candidates) ===")
-    print(rankings[display_cols].tail(args.top_n).to_string(index=False))
+    print(f"\n=== Market Regime ===")
+    if mkt_prob_up >= BULL_THRESHOLD:
+        print(f"  BULL DAY (prob up: {mkt_prob_up}%) -> LONG ONLY. Skipping shorts to avoid fighting the trend.")
+        show_longs  = True
+        show_shorts = False
+    elif mkt_prob_up <= BEAR_THRESHOLD:
+        print(f"  BEAR DAY (prob up: {mkt_prob_up}%) -> SHORT ONLY. Skipping longs to avoid fighting the trend.")
+        show_longs  = False
+        show_shorts = True
+    else:
+        print(f"  NEUTRAL (prob up: {mkt_prob_up}%) -> Trading both longs and shorts.")
+        show_longs  = True
+        show_shorts = True
+
+    if show_longs:
+        print(f"\n=== Top {args.top_n} stocks (Long candidates) ===")
+        print(rankings[display_cols].head(args.top_n).to_string(index=False))
+    else:
+        print(f"\n=== Longs SKIPPED (bearish market regime) ===")
+
+    if show_shorts:
+        print(f"\n=== Bottom {args.top_n} stocks (Short candidates) ===")
+        print(rankings[display_cols].tail(args.top_n).to_string(index=False))
+    else:
+        print(f"\n=== Shorts SKIPPED (bullish market regime) ===")
+
+    # Save regime info alongside forecast
+    rankings["market_prob_up_1d"] = mkt_prob_up
+    rankings["regime"] = "bull" if mkt_prob_up >= BULL_THRESHOLD else ("bear" if mkt_prob_up <= BEAR_THRESHOLD else "neutral")
+    rankings.to_csv(out_file, index=False)
 
     # Summary of market conditions used
     print(f"\n=== Market conditions at forecast time ===")
