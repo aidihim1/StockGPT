@@ -11,9 +11,11 @@ import numpy as np
 import time
 from datetime import datetime, timedelta
 from login import get_api
+from clean_data import clean
 
 SLEEP_BETWEEN  = 0.35         # Angel historical API allows ~3 req/sec
 MAX_RETRIES    = 4            # retries per stock on rate-limit / network errors
+ANGEL_GIVE_UP  = 10           # consecutive Angel failures before switching to yfinance-only
 REPAIR_DAYS    = 120          # always re-fetch this many recent days (fills old gaps)
 NEW_STOCK_DAYS = 1900         # history to fetch for stocks not yet in dataset (Angel max ~2000)
 SAVE_EVERY     = 500          # save progress to CSV every N stocks
@@ -60,6 +62,7 @@ def update_data():
     new_rows  = []
     yf_queue  = []            # symbols Angel failed on
     n_angel   = 0
+    angel_fail_streak = 0
     total     = len(symbols_df)
     print(f"Fetching {total} symbols ...\n")
 
@@ -74,7 +77,14 @@ def update_data():
 
         if tmp is None:
             yf_queue.append(symbol)
+            if api is not None:
+                angel_fail_streak += 1
+                if angel_fail_streak >= ANGEL_GIVE_UP:
+                    print(f"  Angel One failed {ANGEL_GIVE_UP} stocks in a row -- "
+                          f"switching to yfinance for the rest of this run.", flush=True)
+                    api = None
         else:
+            angel_fail_streak = 0
             n_angel += 1
             tmp = _finish(tmp, symbol, cutoff)
             if tmp is not None:
@@ -155,7 +165,8 @@ def _fetch_yfinance_batch(symbols, starts):
         start   = min(starts[s] for s in batch).date()
         tickers = [s + ".NS" for s in batch]
         try:
-            raw = yf.download(tickers, start=str(start), auto_adjust=True, progress=False,
+            # auto_adjust=False: raw closes, same basis as Angel One (splits handled in clean_data)
+            raw = yf.download(tickers, start=str(start), auto_adjust=False, progress=False,
                               group_by="ticker", threads=True)
         except Exception:
             raw = None
@@ -165,7 +176,7 @@ def _fetch_yfinance_batch(symbols, starts):
                 sub = sub.rename(columns={"Date": "date", "Open": "open", "High": "high",
                                           "Low": "low", "Close": "close", "Volume": "volume"})
                 sub["date"] = pd.to_datetime(sub["date"]).dt.tz_localize(None).dt.normalize()
-                sub = sub[sub["date"] >= starts[s]]
+                sub = sub[(sub["date"] >= starts[s]) & (sub["volume"] > 0)]
                 if len(sub) == 0:
                     raise ValueError
                 frames[s] = sub
@@ -189,7 +200,7 @@ def _save(df, new_rows):
     new_df   = _round_df(pd.concat(new_rows, axis=0, ignore_index=True))
     combined = pd.concat([df, new_df], axis=0, ignore_index=True)
     combined = combined.drop_duplicates(subset=["date", "stock"], keep="last")
-    combined = combined.sort_values(["date", "stock"]).reset_index(drop=True)
+    combined = clean(combined)
     combined.to_csv(DATA_FILE, index=False)
     return combined
 
