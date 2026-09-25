@@ -1,36 +1,40 @@
 # update_data.py -- fetches latest prices from Angel One and updates dataset.csv
-# Falls back to yfinance if Angel One API is unavailable (e.g. after market hours)
+# Falls back to yfinance for any stock Angel One fails on
 # Run this EVERY DAY before running forecast.py to keep data current
+#
+# Each stock is fetched from ITS OWN last date (not the dataset-wide max), and the
+# last REPAIR_DAYS are always re-fetched, so days missed by earlier failed runs get
+# filled in. Stocks in nse_symbols.csv but not yet in dataset.csv are added.
 
 import pandas as pd
 import numpy as np
 import time
-import os
 from datetime import datetime, timedelta
 from login import get_api
 
-SLEEP_BETWEEN = 0.1          # reduced from 0.4 -> ~4 min for 2411 stocks
-SAVE_EVERY    = 300          # save progress to CSV every N stocks
-DATA_FILE     = "dataset.csv"
-RAW_FOLDER    = "raw_prices"
+SLEEP_BETWEEN  = 0.35         # Angel historical API allows ~3 req/sec
+MAX_RETRIES    = 4            # retries per stock on rate-limit / network errors
+REPAIR_DAYS    = 120          # always re-fetch this many recent days (fills old gaps)
+NEW_STOCK_DAYS = 1900         # history to fetch for stocks not yet in dataset (Angel max ~2000)
+SAVE_EVERY     = 500          # save progress to CSV every N stocks
+YF_BATCH       = 100          # tickers per yfinance batch download
+DATA_FILE      = "dataset.csv"
+COLS           = ["date", "stock", "open", "high", "low", "close", "volume", "return_1d"]
+
 
 def update_data():
-    # 1. Load existing dataset to find last date
+    # 1. Load existing dataset and each stock's own last date
     print("Loading existing data ...")
-    df = pd.read_csv(DATA_FILE, parse_dates=["date"],
-                     usecols=["date", "stock", "open", "high", "low", "close", "volume", "return_1d"])
-    last_date = df["date"].max()
-    today     = datetime.now().date()
+    df = pd.read_csv(DATA_FILE, parse_dates=["date"], usecols=COLS)
+    stock_last = df.groupby("stock")["date"].max()
+    now   = datetime.now()
+    today = pd.Timestamp(now.date())
+    # Before market close today's candle is incomplete -- don't store it
+    cutoff = today if now.hour * 60 + now.minute >= 15 * 60 + 45 else today - timedelta(days=1)
 
-    print(f"  Last date in dataset : {last_date.date()}")
-    print(f"  Today                : {today}")
-
-    if last_date.date() >= today:
-        print("Data is already up to date. Nothing to fetch.")
-        return
-
-    days_behind = (today - last_date.date()).days
-    print(f"  Days behind          : {days_behind} calendar days\n")
+    print(f"  Last date in dataset : {df['date'].max().date()}")
+    print(f"  Stocks behind latest : {(stock_last < stock_last.max()).sum()}")
+    print(f"  Fetching up to       : {cutoff.date()}\n")
 
     # 2. Login (optional -- fall back to yfinance if Angel One is unavailable)
     print("Logging in to Angel One ...")
@@ -39,132 +43,155 @@ def update_data():
         api = get_api()
         print("  Angel One login successful.")
     except Exception as e:
-        print(f"  Angel One login failed ({type(e).__name__}). Using yfinance fallback.")
+        print(f"  Angel One login failed ({type(e).__name__}: {e}). Using yfinance only.")
 
-    # 3. Load symbols
+    # 3. Symbols (skip iNAV tickers -- indicative NAVs, not tradable, no candles)
     symbols_df = pd.read_csv("nse_symbols.csv")
-    existing_stocks = set(df["stock"].unique())
+    symbols_df = symbols_df[~symbols_df["clean_symbol"].str.endswith("INAV")].reset_index(drop=True)
+    repair_from = today - timedelta(days=REPAIR_DAYS)
 
-    # Fetch from 7 days before last_date to ensure return computation is correct
-    from_date = (last_date - timedelta(days=7)).strftime("%Y-%m-%d %H:%M")
-    to_date   = datetime.now().strftime("%Y-%m-%d %H:%M")
-    print(f"Fetching new data from {from_date} to {to_date} ...\n")
+    def start_for(symbol):
+        if symbol in stock_last.index:
+            # 7-day overlap so the first new return is computed against a real prior close
+            return min(stock_last[symbol], repair_from) - timedelta(days=7)
+        return today - timedelta(days=NEW_STOCK_DAYS)
 
+    to_date   = now.strftime("%Y-%m-%d %H:%M")
     new_rows  = []
-    saved_count = 0
+    yf_queue  = []            # symbols Angel failed on
+    n_angel   = 0
+    total     = len(symbols_df)
+    print(f"Fetching {total} symbols ...\n")
 
     for i, row in symbols_df.iterrows():
-        token  = str(row["token"])
         symbol = row["clean_symbol"]
+        start  = start_for(symbol)
 
-        if symbol not in existing_stocks:
-            continue
-
-        fetched_ok = False
+        tmp = None
         if api is not None:
-            try:
-                params = {
-                    "exchange":    "NSE",
-                    "symboltoken": token,
-                    "interval":    "ONE_DAY",
-                    "fromdate":    from_date,
-                    "todate":      to_date,
-                }
-                resp = api.getCandleData(params)
-                if resp["status"] and resp["data"]:
-                    tmp = pd.DataFrame(resp["data"],
-                                       columns=["datetime", "open", "high", "low", "close", "volume"])
-                    tmp["date"] = pd.to_datetime(tmp["datetime"]).dt.normalize()
-                    tmp = tmp.sort_values("date")
-                    tmp["return_1d"] = tmp["close"].pct_change().clip(-1.0, 1.0)
-                    tmp["stock"] = symbol
-                    tmp = tmp[tmp["date"] > pd.Timestamp(last_date)]
-                    tmp = tmp.dropna(subset=["return_1d"])
-                    if len(tmp) > 0:
-                        tmp = tmp[["date", "stock", "open", "high", "low", "close", "volume", "return_1d"]]
-                        new_rows.append(tmp)
-                    fetched_ok = True
-            except Exception:
-                pass
+            tmp = _fetch_angel(api, str(row["token"]), start, to_date)
+            time.sleep(SLEEP_BETWEEN)
 
-        if not fetched_ok:
-            # Fall back to yfinance
-            try:
-                tmp = _fetch_yfinance(symbol, last_date)
-                if tmp is not None:
-                    new_rows.append(tmp)
-            except Exception:
-                pass
-
-        time.sleep(SLEEP_BETWEEN)
+        if tmp is None:
+            yf_queue.append(symbol)
+        else:
+            n_angel += 1
+            tmp = _finish(tmp, symbol, cutoff)
+            if tmp is not None:
+                new_rows.append(tmp)
 
         fetched = i + 1
         if fetched % 100 == 0:
-            print(f"  {fetched}/{len(symbols_df)} stocks fetched ...")
+            print(f"  {fetched}/{total} | angel ok {n_angel} | queued for yfinance {len(yf_queue)}", flush=True)
 
-        # Incremental save every SAVE_EVERY stocks -- so partial runs keep progress
+        # Incremental save -- so partial runs keep progress
         if new_rows and fetched % SAVE_EVERY == 0:
-            _partial = pd.concat(new_rows, axis=0, ignore_index=True)
-            _partial = _round_df(_partial)
-            _combined = pd.concat([df, _partial], axis=0, ignore_index=True)
-            _combined = _combined.drop_duplicates(subset=["date", "stock"], keep="last")
-            _combined = _combined.sort_values(["date", "stock"]).reset_index(drop=True)
-            _combined.to_csv(DATA_FILE, index=False)
-            saved_count = len(_partial)
-            print(f"  [saved {saved_count} new rows so far -> {DATA_FILE}]")
+            _save(df, new_rows)
+            print(f"  [progress saved -> {DATA_FILE}]", flush=True)
 
-    print(f"  {len(symbols_df)}/{len(symbols_df)} stocks processed.")
+    # 4. yfinance fallback for everything Angel missed
+    n_yf, failed = 0, []
+    if yf_queue:
+        print(f"\nFetching {len(yf_queue)} symbols from yfinance ...")
+        yf_frames, failed = _fetch_yfinance_batch(yf_queue, {s: start_for(s) for s in yf_queue})
+        for symbol, tmp in yf_frames.items():
+            tmp = _finish(tmp, symbol, cutoff)
+            if tmp is not None:
+                new_rows.append(tmp)
+                n_yf += 1
+
+    print(f"\n  Angel One : {n_angel} stocks")
+    print(f"  yfinance  : {n_yf} stocks")
+    print(f"  Failed    : {len(failed)} stocks")
+    if failed:
+        print(f"    {', '.join(failed[:60])}{' ...' if len(failed) > 60 else ''}")
 
     if not new_rows:
-        print("No new data received (market may have been closed).")
+        print("No new data received.")
         return
 
-    # 4. Build final new rows dataframe
-    new_df = pd.concat(new_rows, axis=0, ignore_index=True)
-    new_df  = _round_df(new_df)
+    # 5. Final save
+    combined = _save(df, new_rows)
+    latest   = combined.groupby("stock")["date"].max()
+    print(f"\nUpdated {DATA_FILE}")
+    print(f"  Total rows    : {len(combined):,}")
+    print(f"  Stocks        : {combined['stock'].nunique()}  (was {df['stock'].nunique()})")
+    print(f"  Date range    : {combined['date'].min().date()} to {combined['date'].max().date()}")
+    print(f"  Stocks up to date ({latest.max().date()}): {(latest == latest.max()).sum()}")
+    print("Done. Now run forecast.py for fresh predictions.")
 
-    new_dates = sorted(new_df["date"].dt.date.unique())
-    print(f"\n  New trading days found: {len(new_dates)}")
-    for d in new_dates:
-        print(f"    {d}")
 
-    # 5. Final save to dataset.csv
+def _fetch_angel(api, token, start, to_date):
+    """Fetch daily candles from Angel One, retrying on rate limits. Returns DataFrame or None."""
+    params = {
+        "exchange":    "NSE",
+        "symboltoken": token,
+        "interval":    "ONE_DAY",
+        "fromdate":    start.strftime("%Y-%m-%d 09:15"),
+        "todate":      to_date,
+    }
+    for attempt in range(MAX_RETRIES):
+        try:
+            resp = api.getCandleData(params)
+        except Exception:
+            resp = None
+        if resp and resp.get("status"):
+            if not resp.get("data"):
+                return None
+            tmp = pd.DataFrame(resp["data"], columns=["datetime", "open", "high", "low", "close", "volume"])
+            tmp["date"] = pd.to_datetime(tmp["datetime"]).dt.tz_localize(None).dt.normalize()
+            return tmp
+        # Rate limited or network error -- back off and retry
+        time.sleep(1.0 * (attempt + 1))
+    return None
+
+
+def _fetch_yfinance_batch(symbols, starts):
+    """Batch-download symbols from yfinance. Returns ({symbol: DataFrame}, failed_symbols)."""
+    import yfinance as yf
+    frames, failed = {}, []
+    for b in range(0, len(symbols), YF_BATCH):
+        batch   = symbols[b:b + YF_BATCH]
+        start   = min(starts[s] for s in batch).date()
+        tickers = [s + ".NS" for s in batch]
+        try:
+            raw = yf.download(tickers, start=str(start), auto_adjust=True, progress=False,
+                              group_by="ticker", threads=True)
+        except Exception:
+            raw = None
+        for s, t in zip(batch, tickers):
+            try:
+                sub = raw[t].dropna(how="all").reset_index()
+                sub = sub.rename(columns={"Date": "date", "Open": "open", "High": "high",
+                                          "Low": "low", "Close": "close", "Volume": "volume"})
+                sub["date"] = pd.to_datetime(sub["date"]).dt.tz_localize(None).dt.normalize()
+                sub = sub[sub["date"] >= starts[s]]
+                if len(sub) == 0:
+                    raise ValueError
+                frames[s] = sub
+            except Exception:
+                failed.append(s)
+        print(f"  yfinance {min(b + YF_BATCH, len(symbols))}/{len(symbols)}", flush=True)
+    return frames, failed
+
+
+def _finish(tmp, symbol, cutoff):
+    """Compute returns within the fetched window and keep completed days only."""
+    tmp = tmp.sort_values("date").drop_duplicates("date")
+    tmp = tmp[tmp["date"] <= cutoff]
+    tmp["return_1d"] = tmp["close"].pct_change().clip(-1.0, 1.0)
+    tmp["stock"] = symbol
+    tmp = tmp.dropna(subset=["return_1d"])
+    return tmp[COLS] if len(tmp) > 0 else None
+
+
+def _save(df, new_rows):
+    new_df   = _round_df(pd.concat(new_rows, axis=0, ignore_index=True))
     combined = pd.concat([df, new_df], axis=0, ignore_index=True)
     combined = combined.drop_duplicates(subset=["date", "stock"], keep="last")
     combined = combined.sort_values(["date", "stock"]).reset_index(drop=True)
     combined.to_csv(DATA_FILE, index=False)
-
-    print(f"\nUpdated {DATA_FILE}")
-    print(f"  Total rows    : {len(combined):,}")
-    print(f"  Stocks        : {combined['stock'].nunique()}")
-    print(f"  Date range    : {combined['date'].min().date()} to {combined['date'].max().date()}")
-    print("Done. Now run forecast.py for fresh predictions.")
-
-
-def _fetch_yfinance(symbol, last_date):
-    """Fetch missing days from yfinance for a single NSE symbol."""
-    import yfinance as yf
-    ticker = symbol + ".NS"
-    from_dt = (last_date - timedelta(days=7)).date()
-    try:
-        raw = yf.download(ticker, start=str(from_dt), auto_adjust=True, progress=False)
-        if raw is None or len(raw) == 0:
-            return None
-        raw = raw.reset_index()
-        raw.columns = [c[0] if isinstance(c, tuple) else c for c in raw.columns]
-        raw = raw.rename(columns={"Date": "date", "Open": "open", "High": "high",
-                                   "Low": "low", "Close": "close", "Volume": "volume"})
-        raw["date"] = pd.to_datetime(raw["date"]).dt.normalize()
-        raw = raw.sort_values("date")
-        raw["return_1d"] = raw["close"].pct_change().clip(-1.0, 1.0)
-        raw["stock"] = symbol
-        raw = raw[raw["date"] > pd.Timestamp(last_date)]
-        raw = raw.dropna(subset=["return_1d"])
-        if len(raw) == 0:
-            return None
-        return raw[["date", "stock", "open", "high", "low", "close", "volume", "return_1d"]]
-    except Exception:
-        return None
+    return combined
 
 
 def _round_df(new_df):
