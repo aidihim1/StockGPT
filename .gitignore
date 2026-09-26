@@ -31,3 +31,6 @@ __pycache__/
 
 # ── Checkpoints ──
 checkpoints/
+
+# Training logs per model
+training_log_*.csv
