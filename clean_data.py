@@ -7,7 +7,8 @@
 # with auto_adjust=False). clean():
 #   1. drops dummy test symbols (e.g. 011NSETEST)
 #   2. drops no-trade rows (volume 0) from ANGEL_START on -- data vendors emit these on
-#      NSE holidays and for untraded stocks, which would feed fake flat days to the model
+#      NSE holidays and for untraded stocks, which would feed fake flat days to the model;
+#      widens high/low where the open or close falls outside them
 #   3. recomputes return_1d = close / previous close - 1, so a day missing from one source
 #      can never turn a 2-day move into a "1-day" return (rows after a >10-day gap keep
 #      the return computed at fetch time)
@@ -37,6 +38,12 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     df = df[~(angel & (df["volume"] <= 0))]
     n_dropped = n0 - len(df)
 
+    # OHLC consistency: the day's high/low must contain the open and close
+    px = df[["open", "high", "low", "close"]]
+    hi, lo = px.max(axis=1), px.min(axis=1)
+    n_ohlc = int(((df["high"] < hi) | (df["low"] > lo)).sum())
+    df = df.assign(high=hi, low=lo)
+
     df = df.sort_values(["stock", "date"]).reset_index(drop=True)
     g = df.groupby("stock", sort=False)
     prev_close = g["close"].shift()
@@ -57,15 +64,30 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
             ret.iat[i] = r * best - 1
             n_split += 1
 
+    # Feed gaps: a weekday where many stocks are missing even though they trade the days
+    # around it (neither Angel One nor Yahoo has the day). The next return for those stocks
+    # would span 2 days, so it is blanked instead of being mislabelled as a 1-day return.
+    cnt = df[df["date"] >= ANGEL_START].groupby("date")["stock"].size()
+    med = cnt.rolling(21, center=True, min_periods=5).median()
+    gap_days = cnt.index[(cnt < 0.85 * med) & (cnt.index.dayofweek < 5)]
+    prev_date = g["date"].shift()
+    n_gap = 0
+    for d in gap_days:
+        spans = recompute & (prev_date < d) & (df["date"] > d)
+        n_gap += int(spans.sum())
+        ret[spans] = np.nan
+
     bad = ret.abs() > MAX_ABS_RET
     bad |= df["close"] <= 0
     ret[bad] = np.nan
     df["return_1d"] = ret.round(6)
 
     if verbose:
-        print(f"  clean: dropped {n_dropped:,} rows (test symbols / no-trade days), "
+        print(f"  clean: fixed {n_ohlc:,} high/low ranges, "
+              f"dropped {n_dropped:,} rows (test symbols / no-trade days), "
               f"recomputed {int(recompute.sum()):,} returns, adjusted {n_split} splits/bonuses, "
-              f"blanked {int(bad.sum()):,} implausible returns")
+              f"blanked {n_gap:,} returns spanning feed-gap days "
+              f"({', '.join(str(d.date()) for d in gap_days) or 'none'}) and {int(bad.sum()):,} implausible returns")
     return df.sort_values(["date", "stock"]).reset_index(drop=True)
 
 
