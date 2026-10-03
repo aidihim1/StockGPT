@@ -12,6 +12,7 @@ import time
 from datetime import datetime, timedelta
 from login import get_api
 from clean_data import clean
+from corporate_actions import candidate_stocks, fetch_actions, save_actions
 
 SLEEP_BETWEEN  = 0.35         # Angel historical API allows ~3 req/sec
 MAX_RETRIES    = 4            # retries per stock on rate-limit / network errors
@@ -19,7 +20,9 @@ ANGEL_GIVE_UP  = 10           # consecutive Angel failures before switching to y
 REPAIR_DAYS    = 120          # always re-fetch this many recent days (fills old gaps)
 NEW_STOCK_DAYS = 1900         # history to fetch for stocks not yet in dataset (Angel max ~2000)
 SAVE_EVERY     = 500          # save progress to CSV every N stocks
-YF_BATCH       = 100          # tickers per yfinance batch download
+YF_BATCH       = 25           # tickers per yfinance batch (Yahoo rate-limits large requests)
+YF_PAUSE       = 2            # seconds between yfinance batches
+YF_PASSES      = 4            # retry passes for symbols Yahoo failed on
 DATA_FILE      = "dataset.csv"
 COLS           = ["date", "stock", "open", "high", "low", "close", "volume", "return_1d"]
 
@@ -120,6 +123,15 @@ def update_data():
         print("No new data received.")
         return
 
+    # Record splits/bonuses for stocks with big moves in the new data (clean_data only adjusts
+    # a move when a split/bonus is recorded -- it never guesses from the size of the drop)
+    new_df = pd.concat(new_rows, ignore_index=True)
+    cands = candidate_stocks(pd.concat([df[df["stock"].isin(new_df["stock"].unique())], new_df]))
+    cands = [c for c in cands if c in set(new_df["stock"])]
+    if cands:
+        print(f"\nChecking corporate actions for {len(cands)} stocks with large moves ...")
+        save_actions(fetch_actions(cands, new_df["date"].min() - timedelta(days=10)))
+
     # 5. Final save
     combined = _save(df, new_rows)
     latest   = combined.groupby("stock")["date"].max()
@@ -128,7 +140,7 @@ def update_data():
     print(f"  Stocks        : {combined['stock'].nunique()}  (was {df['stock'].nunique()})")
     print(f"  Date range    : {combined['date'].min().date()} to {combined['date'].max().date()}")
     print(f"  Stocks up to date ({latest.max().date()}): {(latest == latest.max()).sum()}")
-    print("Done. Now run forecast.py for fresh predictions.")
+    print("Done. Now run picks.py for fresh picks.")
 
 
 def _fetch_angel(api, token, start, to_date):
@@ -157,33 +169,60 @@ def _fetch_angel(api, token, start, to_date):
 
 
 def _fetch_yfinance_batch(symbols, starts):
-    """Batch-download symbols from yfinance. Returns ({symbol: DataFrame}, failed_symbols)."""
+    """Batch-download symbols from yfinance. Returns ({symbol: DataFrame}, failed_symbols).
+    Yahoo rate-limits large requests (HTTP 429), so symbols are fetched in small batches with
+    pauses, and anything that fails is retried in later passes with longer waits."""
     import yfinance as yf
-    frames, failed = {}, []
-    for b in range(0, len(symbols), YF_BATCH):
-        batch   = symbols[b:b + YF_BATCH]
-        start   = min(starts[s] for s in batch).date()
-        tickers = [s + ".NS" for s in batch]
-        try:
-            # auto_adjust=False: raw closes, same basis as Angel One (splits handled in clean_data)
-            raw = yf.download(tickers, start=str(start), auto_adjust=False, progress=False,
-                              group_by="ticker", threads=True)
-        except Exception:
-            raw = None
-        for s, t in zip(batch, tickers):
+    frames, pending, events = {}, list(symbols), []
+    for attempt in range(YF_PASSES):
+        if not pending:
+            break
+        if attempt:
+            wait = 30 * attempt
+            print(f"  yfinance retry pass {attempt + 1}: {len(pending)} symbols, waiting {wait}s ...", flush=True)
+            time.sleep(wait)
+        failed = []
+        for b in range(0, len(pending), YF_BATCH):
+            batch   = pending[b:b + YF_BATCH]
+            start   = min(starts[s] for s in batch).date()
+            tickers = [s + ".NS" for s in batch]
             try:
-                sub = raw[t].dropna(how="all").reset_index()
-                sub = sub.rename(columns={"Date": "date", "Open": "open", "High": "high",
-                                          "Low": "low", "Close": "close", "Volume": "volume"})
-                sub["date"] = pd.to_datetime(sub["date"]).dt.tz_localize(None).dt.normalize()
-                sub = sub[(sub["date"] >= starts[s]) & (sub["volume"] > 0)]
-                if len(sub) == 0:
-                    raise ValueError
-                frames[s] = sub
+                # auto_adjust=False: raw closes, same basis as Angel One (splits handled in clean_data)
+                raw = yf.download(tickers, start=str(start), auto_adjust=False, actions=True,
+                                  progress=False, group_by="ticker", threads=True)
             except Exception:
-                failed.append(s)
-        print(f"  yfinance {min(b + YF_BATCH, len(symbols))}/{len(symbols)}", flush=True)
-    return frames, failed
+                raw = None
+            for s, t in zip(batch, tickers):
+                try:
+                    sub = raw[t].dropna(how="all").reset_index()
+                    sub = sub.rename(columns={"Date": "date", "Open": "open", "High": "high",
+                                              "Low": "low", "Close": "close", "Volume": "volume"})
+                    sub["date"] = pd.to_datetime(sub["date"]).dt.tz_localize(None).dt.normalize()
+                    # Yahoo's "Close" is split-adjusted even with auto_adjust=False. Undo that so
+                    # prices are raw like Angel One's: multiply each row by every split after it.
+                    split = sub["Stock Splits"].fillna(0) if "Stock Splits" in sub else pd.Series(0.0, index=sub.index)
+                    for d, r in zip(sub["date"], split):
+                        if r > 0:
+                            events.append({"stock": s, "date": d, "ratio": float(r)})
+                    after = split.where(split > 0, 1.0)[::-1].cumprod()[::-1].shift(-1).fillna(1.0)
+                    for c in ["open", "high", "low", "close"]:
+                        sub[c] = sub[c] * after
+                    sub["volume"] = sub["volume"] / after
+                    sub = sub[(sub["date"] >= starts[s]) & (sub["volume"] > 0)]
+                    if len(sub) == 0:
+                        raise ValueError
+                    frames[s] = sub
+                except Exception:
+                    failed.append(s)
+            time.sleep(YF_PAUSE)
+            done = min(b + YF_BATCH, len(pending))
+            if done % 500 < YF_BATCH or done == len(pending):
+                print(f"  yfinance pass {attempt + 1}: {done}/{len(pending)} | ok so far {len(frames)}", flush=True)
+        pending = failed
+    if events:
+        save_actions(pd.DataFrame(events))
+        print(f"  recorded {len(events)} split/bonus events from Yahoo", flush=True)
+    return frames, pending
 
 
 def _finish(tmp, symbol, cutoff):

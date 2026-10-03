@@ -111,6 +111,10 @@ def main(args):
             if len(both):
                 rows.append((s, len(both), float((both.ours / both.yahoo - 1).abs().max() * 100)))
         res = pd.DataFrame(rows, columns=["stock", "days", "max_diff_pct"])
+        if res.empty:
+            print("   !! Yahoo returned no data (likely rate-limited) -- cross-check NOT done; rerun later")
+            print("=" * 78)
+            return
         bad = res[res.max_diff_pct > 0.5]
         print(f"   compared {len(res)} stocks (15 most traded + 15 random), {int(res.days.sum())} closes")
         print(f"   {ok(bad.empty)}closes differing by more than 0.5%: {len(bad)}"
