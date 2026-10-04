@@ -1,0 +1,13 @@
+# Python 3.11. Install with:  pip install -r requirements.txt
+# For GPU training (NVIDIA), install PyTorch with CUDA first, e.g.:
+#   pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cu118
+torch==2.7.1
+pandas==3.0.2
+numpy==2.4.4
+streamlit==1.56.0
+yfinance==1.2.1
+matplotlib==3.10.8
+requests==2.33.1
+# Angel One API (optional: without config.py the update falls back to Yahoo Finance)
+smartapi-python==1.5.5
+pyotp==2.9.0
