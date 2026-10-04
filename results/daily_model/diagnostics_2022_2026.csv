@@ -1,11 +1,11 @@
 test,sharpe,mean_ann_pct,start,end,checkpoint,rank_corr_with_todays_return
-BASELINE (close t -> close t+1),16.5,175.21,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-no-trade days = 0%,16.42,174.24,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-realised returns winsorised at +/-5%,19.35,156.87,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-median instead of mean within each leg,11.03,122.97,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-drop the best 10% of days,16.64,142.55,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-pure 1-day reversal: buy today's losers,-3.9,-58.17,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-StockGPT with 1-day reversal removed,12.16,107.66,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-exclude stocks locked on t or t+1,12.78,131.01,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-trade at next OPEN (open t+1 -> close t+1),1.97,18.82,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
-overnight gap only (close t -> open t+1),23.83,155.33,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+BASELINE (close t -> close t+1),17.72,183.0,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+no-trade days = 0%,17.61,181.74,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+realised returns winsorised at +/-5%,20.16,162.04,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+median instead of mean within each leg,11.59,127.34,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+drop the best 10% of days,18.64,150.35,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+pure 1-day reversal: buy today's losers,-4.18,-60.96,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+StockGPT with 1-day reversal removed,12.89,113.49,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+exclude stocks locked on t or t+1,13.47,136.37,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+trade at next OPEN (open t+1 -> close t+1),2.41,20.78,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515
+overnight gap only (close t -> open t+1),26.24,161.12,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.515

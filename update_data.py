@@ -133,6 +133,15 @@ def update_data():
         print(f"\nChecking corporate actions for {len(cands)} stocks with large moves ...")
         save_actions(fetch_actions(cands, new_df["date"].min() - timedelta(days=10)))
 
+    # New ETFs list often; keep them out of the stock universe (picks.py excludes etf_symbols.csv)
+    try:
+        from etf_list import refresh_etfs
+        n_etf = refresh_etfs()
+        if n_etf:
+            print(f"  added {n_etf} new ETFs to etf_symbols.csv")
+    except Exception as e:
+        print(f"  ETF list not refreshed ({type(e).__name__}); using the saved list")
+
     # 5. Final save
     combined = _save(df, new_rows)
     latest   = combined.groupby("stock")["date"].max()
