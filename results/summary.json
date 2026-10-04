@@ -5,9 +5,15 @@
     "n_days": 929,
     "average_stock_ann_pct": 17.1,
     "nifty_ann_pct": 6.8,
+    "risk_free_pct": 6.5,
+    "average_stock_sharpe": 0.49,
+    "nifty_sharpe": -0.09,
     "strategies": {
       "Monthly, top 10%, keep while top 30%": {
         "long_net_ann_pct": 26.9,
+        "sharpe_net": 0.88,
+        "information_ratio": 1.39,
+        "months_beating_average_pct": 67,
         "excess_gross_ann_pct": 11.6,
         "excess_gross_t": 3.43,
         "excess_net_ann_pct": 9.8,
@@ -26,6 +32,9 @@
       },
       "Weekly, top 10%, keep while top 30%": {
         "long_net_ann_pct": 27.4,
+        "sharpe_net": 0.94,
+        "information_ratio": 1.47,
+        "months_beating_average_pct": 70,
         "excess_gross_ann_pct": 13.6,
         "excess_gross_t": 3.94,
         "excess_net_ann_pct": 10.3,
@@ -44,6 +53,9 @@
       },
       "Daily, top 10%, keep while top 30%": {
         "long_net_ann_pct": 27.6,
+        "sharpe_net": 0.9,
+        "information_ratio": 1.37,
+        "months_beating_average_pct": 63,
         "excess_gross_ann_pct": 16.6,
         "excess_gross_t": 4.3,
         "excess_net_ann_pct": 10.5,
@@ -62,6 +74,9 @@
       },
       "Monthly, top 10%": {
         "long_net_ann_pct": 24.6,
+        "sharpe_net": 0.78,
+        "information_ratio": 1.03,
+        "months_beating_average_pct": 67,
         "excess_gross_ann_pct": 11.2,
         "excess_gross_t": 3.21,
         "excess_net_ann_pct": 7.5,
@@ -80,6 +95,9 @@
       },
       "Daily, top 10%": {
         "long_net_ann_pct": 9.8,
+        "sharpe_net": 0.14,
+        "information_ratio": -0.91,
+        "months_beating_average_pct": 43,
         "excess_gross_ann_pct": 20.2,
         "excess_gross_t": 4.97,
         "excess_net_ann_pct": -7.2,
