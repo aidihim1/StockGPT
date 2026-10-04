@@ -1,0 +1,7 @@
+factor,edge vs average stock %/yr,t,correlation with StockGPT
+Momentum (12-1 month),8.6,2.28,0.51
+Short-term reversal (losers),-5.0,-1.16,0.04
+Illiquidity (low traded value),-0.8,-0.22,-0.04
+Low price,-10.9,-1.97,0.2
+Low volatility,-5.6,-0.89,-0.2
+StockGPT alpha after all factors,7.5,2.84,
