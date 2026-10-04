@@ -45,3 +45,6 @@ CONCEPTS.md
 
 # Markdown notes stay local
 *.md
+
+# Keep all result tables in results/
+!results/**/*.csv
