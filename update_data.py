@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import time
 from datetime import datetime, timedelta
-from login import get_api
+
 from clean_data import clean
 from corporate_actions import candidate_stocks, fetch_actions, save_actions
 
@@ -45,6 +45,7 @@ def update_data():
     print("Logging in to Angel One ...")
     api = None
     try:
+        from login import get_api   # needs config.py (Angel One credentials)
         api = get_api()
         print("  Angel One login successful.")
     except Exception as e:
