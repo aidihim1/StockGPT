@@ -1,6 +1,6 @@
 # update_data.py -- fetches latest prices from Angel One and updates dataset.csv
 # Falls back to yfinance for any stock Angel One fails on
-# Run this EVERY DAY before running forecast.py to keep data current
+# Run this before picks.py to keep data current (run_daily.bat does both)
 #
 # Each stock is fetched from ITS OWN last date (not the dataset-wide max), and the
 # last REPAIR_DAYS are always re-fetched, so days missed by earlier failed runs get
