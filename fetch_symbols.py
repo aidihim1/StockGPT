@@ -17,19 +17,24 @@ def download_instrument_master():
     
     df = pd.DataFrame(data)
     
-    # Filter: only NSE exchange, only equity stocks (not futures/options/ETFs)
+    # Filter: only NSE exchange, only cash equities (not futures/options)
     # 'expiry' is empty for equity stocks (derivatives have an expiry date)
+    # Series: EQ (normal), BE/BZ (trade-for-trade: surveillance or non-compliant companies). BE/BZ
+    # must be kept: leaving out stocks in trouble would flatter backtests. ETFs are excluded later
+    # (etf_list.py).
     nse_stocks = df[
-        (df["exch_seg"] == "NSE") &          # NSE exchange only
-        (df["instrumenttype"] == "")  &       # equity (not F&O)
-        (df["symbol"].str.endswith("-EQ"))     # equity suffix
+        (df["exch_seg"] == "NSE") &                        # NSE exchange only
+        (df["instrumenttype"] == "")  &                     # equity (not F&O)
+        (df["symbol"].str.contains(r"-(?:EQ|BE|BZ)$"))      # cash equity series
     ].copy()
-    
+
+    # Clean symbol name (remove the series suffix); one row per company, EQ token preferred
+    nse_stocks["clean_symbol"] = nse_stocks["symbol"].str.replace(r"-(?:EQ|BE|BZ)$", "", regex=True)
+    nse_stocks["order"] = nse_stocks["symbol"].str[-2:].map({"EQ": 0, "BE": 1, "BZ": 2})
+    nse_stocks = nse_stocks.sort_values("order").drop_duplicates("clean_symbol")
+
     # Keep only the columns we need
-    nse_stocks = nse_stocks[["token", "symbol", "name", "exch_seg"]].reset_index(drop=True)
-    
-    # Clean symbol name (remove -EQ suffix for readability)
-    nse_stocks["clean_symbol"] = nse_stocks["symbol"].str.replace("-EQ", "")
+    nse_stocks = nse_stocks[["token", "symbol", "name", "exch_seg", "clean_symbol"]].reset_index(drop=True)
     
     nse_stocks.to_csv("nse_symbols.csv", index=False)
     print(f"Saved {len(nse_stocks)} NSE equity stocks to nse_symbols.csv")

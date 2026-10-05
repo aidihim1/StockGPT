@@ -141,6 +141,11 @@ def update_data():
             print(f"  added {n_etf} new ETFs to etf_symbols.csv")
     except Exception as e:
         print(f"  ETF list not refreshed ({type(e).__name__}); using the saved list")
+    try:
+        from etf_list import refresh_series
+        refresh_series()                     # current NSE series (EQ / BE / BZ) shown with the picks
+    except Exception as e:
+        print(f"  NSE series list not refreshed ({type(e).__name__}); using the saved list")
 
     # 5. Final save
     combined = _save(df, new_rows)

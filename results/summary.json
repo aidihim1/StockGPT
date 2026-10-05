@@ -10,188 +10,188 @@
     "nifty_sharpe": -0.09,
     "strategies": {
       "Monthly, top 10%, keep while top 30%": {
-        "long_net_ann_pct": 28.8,
-        "sharpe_net": 0.91,
-        "information_ratio": 1.65,
-        "months_beating_average_pct": 70,
-        "excess_gross_ann_pct": 13.8,
-        "excess_gross_t": 3.82,
-        "excess_net_ann_pct": 11.5,
-        "excess_net_t": 3.21,
+        "long_net_ann_pct": 28.0,
+        "sharpe_net": 0.88,
+        "information_ratio": 1.52,
+        "months_beating_average_pct": 74,
+        "excess_gross_ann_pct": 12.9,
+        "excess_gross_t": 3.67,
+        "excess_net_ann_pct": 10.6,
+        "excess_net_t": 3.04,
         "excess_net_by_year_pct": {
-          "2023": 21.8,
-          "2024": 15.7,
-          "2025": -5.4,
-          "2026": 14.8
+          "2023": 20.0,
+          "2024": 15.4,
+          "2025": -4.6,
+          "2026": 12.2
         },
         "years_positive": 3,
         "years": 4,
-        "trades_per_year_pct": 768,
-        "long_short_net_ann_pct": 27.0,
-        "long_short_net_t": 6.33
+        "trades_per_year_pct": 766,
+        "long_short_net_ann_pct": 26.5,
+        "long_short_net_t": 6.2
       },
       "Weekly, top 10%, keep while top 30%": {
-        "long_net_ann_pct": 30.0,
-        "sharpe_net": 0.95,
-        "information_ratio": 1.78,
-        "months_beating_average_pct": 74,
-        "excess_gross_ann_pct": 16.1,
-        "excess_gross_t": 4.57,
-        "excess_net_ann_pct": 12.6,
-        "excess_net_t": 3.63,
+        "long_net_ann_pct": 27.6,
+        "sharpe_net": 0.84,
+        "information_ratio": 1.4,
+        "months_beating_average_pct": 70,
+        "excess_gross_ann_pct": 13.6,
+        "excess_gross_t": 3.82,
+        "excess_net_ann_pct": 10.2,
+        "excess_net_t": 2.9,
         "excess_net_by_year_pct": {
-          "2023": 22.5,
-          "2024": 17.2,
-          "2025": -4.7,
-          "2026": 16.7
+          "2023": 19.1,
+          "2024": 15.5,
+          "2025": -7.7,
+          "2026": 15.4
         },
         "years_positive": 3,
         "years": 4,
-        "trades_per_year_pct": 1144,
-        "long_short_net_ann_pct": 33.6,
-        "long_short_net_t": 7.55
+        "trades_per_year_pct": 1145,
+        "long_short_net_ann_pct": 31.3,
+        "long_short_net_t": 6.94
       },
       "Daily, top 10%, keep while top 30%": {
-        "long_net_ann_pct": 29.2,
-        "sharpe_net": 0.91,
-        "information_ratio": 1.66,
+        "long_net_ann_pct": 26.4,
+        "sharpe_net": 0.79,
+        "information_ratio": 1.24,
         "months_beating_average_pct": 67,
-        "excess_gross_ann_pct": 17.5,
-        "excess_gross_t": 4.92,
-        "excess_net_ann_pct": 11.9,
-        "excess_net_t": 3.24,
+        "excess_gross_ann_pct": 14.8,
+        "excess_gross_t": 4.13,
+        "excess_net_ann_pct": 9.0,
+        "excess_net_t": 2.44,
         "excess_net_by_year_pct": {
-          "2023": 22.1,
-          "2024": 15.0,
-          "2025": -5.5,
-          "2026": 17.4
+          "2023": 19.4,
+          "2024": 11.2,
+          "2025": -8.3,
+          "2026": 15.4
         },
         "years_positive": 3,
         "years": 4,
-        "trades_per_year_pct": 1871,
-        "long_short_net_ann_pct": 34.0,
-        "long_short_net_t": 7.11
+        "trades_per_year_pct": 1925,
+        "long_short_net_ann_pct": 33.1,
+        "long_short_net_t": 7.04
       },
       "Monthly, top 10%": {
-        "long_net_ann_pct": 25.0,
-        "sharpe_net": 0.74,
-        "information_ratio": 0.99,
+        "long_net_ann_pct": 23.7,
+        "sharpe_net": 0.69,
+        "information_ratio": 0.81,
         "months_beating_average_pct": 63,
-        "excess_gross_ann_pct": 11.7,
-        "excess_gross_t": 3.0,
-        "excess_net_ann_pct": 7.6,
-        "excess_net_t": 1.95,
+        "excess_gross_ann_pct": 10.3,
+        "excess_gross_t": 2.64,
+        "excess_net_ann_pct": 6.3,
+        "excess_net_t": 1.6,
         "excess_net_by_year_pct": {
-          "2023": 15.4,
-          "2024": 14.1,
-          "2025": -10.5,
-          "2026": 12.8
+          "2023": 11.7,
+          "2024": 13.8,
+          "2025": -10.1,
+          "2026": 10.9
         },
         "years_positive": 3,
         "years": 4,
-        "trades_per_year_pct": 1367,
-        "long_short_net_ann_pct": 24.2,
-        "long_short_net_t": 5.08
+        "trades_per_year_pct": 1351,
+        "long_short_net_ann_pct": 22.9,
+        "long_short_net_t": 4.83
       },
       "Daily, top 10%": {
-        "long_net_ann_pct": 11.0,
-        "sharpe_net": 0.18,
-        "information_ratio": -0.84,
-        "months_beating_average_pct": 35,
-        "excess_gross_ann_pct": 20.8,
-        "excess_gross_t": 5.52,
-        "excess_net_ann_pct": -6.4,
-        "excess_net_t": -1.68,
+        "long_net_ann_pct": 5.7,
+        "sharpe_net": -0.02,
+        "information_ratio": -1.5,
+        "months_beating_average_pct": 30,
+        "excess_gross_ann_pct": 15.4,
+        "excess_gross_t": 4.2,
+        "excess_net_ann_pct": -11.7,
+        "excess_net_t": -3.11,
         "excess_net_by_year_pct": {
-          "2023": -0.4,
-          "2024": 1.7,
-          "2025": -25.3,
-          "2026": 0.3
+          "2023": -5.8,
+          "2024": -6.1,
+          "2025": -29.5,
+          "2026": -3.0
         },
-        "years_positive": 2,
+        "years_positive": 0,
         "years": 4,
-        "trades_per_year_pct": 9065,
-        "long_short_net_ann_pct": -3.7,
-        "long_short_net_t": -0.65
+        "trades_per_year_pct": 9037,
+        "long_short_net_ann_pct": -7.0,
+        "long_short_net_t": -1.25
       }
     },
     "liquid_2025_26": {
-      "excess_net_ann_pct": -4.5,
-      "excess_net_t": -0.68
+      "excess_net_ann_pct": -4.9,
+      "excess_net_t": -0.72
     }
   },
   "daily_model": {
     "start": "2022-05-04",
     "end": "2026-10-01",
-    "close_to_close_gross_ann_pct": 183.0,
-    "close_to_close_gross_sharpe": 17.72,
-    "close_to_close_net_ann_pct": -6.21,
-    "next_open_gross_ann_pct": 72.59,
-    "next_open_gross_sharpe": 7.01,
-    "next_open_net_ann_pct": -116.61,
-    "fama_macbeth_t": 16.25,
-    "fama_macbeth_t_with_controls": 13.51,
-    "overnight_gap_ann_pct": 161.12,
-    "overnight_gap_share_pct": 88.0,
+    "close_to_close_gross_ann_pct": 205.83,
+    "close_to_close_gross_sharpe": 19.71,
+    "close_to_close_net_ann_pct": 18.95,
+    "next_open_gross_ann_pct": 85.19,
+    "next_open_gross_sharpe": 8.09,
+    "next_open_net_ann_pct": -101.69,
+    "fama_macbeth_t": 17.9,
+    "fama_macbeth_t_with_controls": 15.17,
+    "overnight_gap_ann_pct": 183.94,
+    "overnight_gap_share_pct": 89.4,
     "diagnostics": [
       {
         "test": "BASELINE (close t -> close t+1)",
-        "sharpe": 17.72,
-        "mean_ann_pct": 183.0
+        "sharpe": 19.71,
+        "mean_ann_pct": 205.83
       },
       {
         "test": "no-trade days = 0%",
-        "sharpe": 17.61,
-        "mean_ann_pct": 181.74
+        "sharpe": 19.6,
+        "mean_ann_pct": 204.36
       },
       {
         "test": "realised returns winsorised at +/-5%",
-        "sharpe": 20.16,
-        "mean_ann_pct": 162.04
+        "sharpe": 22.59,
+        "mean_ann_pct": 183.19
       },
       {
         "test": "median instead of mean within each leg",
-        "sharpe": 11.59,
-        "mean_ann_pct": 127.34
+        "sharpe": 13.29,
+        "mean_ann_pct": 149.33
       },
       {
         "test": "drop the best 10% of days",
-        "sharpe": 18.64,
-        "mean_ann_pct": 150.35
+        "sharpe": 21.37,
+        "mean_ann_pct": 172.48
       },
       {
         "test": "pure 1-day reversal: buy today's losers",
-        "sharpe": -4.18,
-        "mean_ann_pct": -60.96
+        "sharpe": -5.36,
+        "mean_ann_pct": -78.59
       },
       {
         "test": "StockGPT with 1-day reversal removed",
-        "sharpe": 12.89,
-        "mean_ann_pct": 113.49
+        "sharpe": 13.32,
+        "mean_ann_pct": 119.12
       },
       {
         "test": "exclude stocks locked on t or t+1",
-        "sharpe": 13.47,
-        "mean_ann_pct": 136.37
+        "sharpe": 14.79,
+        "mean_ann_pct": 149.67
       },
       {
         "test": "trade at next OPEN (open t+1 -> close t+1)",
-        "sharpe": 2.41,
-        "mean_ann_pct": 20.78
+        "sharpe": 2.39,
+        "mean_ann_pct": 20.72
       },
       {
         "test": "overnight gap only (close t -> open t+1)",
-        "sharpe": 26.24,
-        "mean_ann_pct": 161.12
+        "sharpe": 29.02,
+        "mean_ann_pct": 183.94
       }
     ]
   },
   "trained_once_20day": {
-    "excess_net_ann_pct": 4.98,
-    "excess_net_t": 1.64,
-    "excess_net_2022_24_pct": 8.22,
-    "excess_net_2025_26_pct": 0.04,
-    "fama_macbeth_t": 6.76
+    "excess_net_ann_pct": 4.29,
+    "excess_net_t": 1.4,
+    "excess_net_2022_24_pct": 7.2,
+    "excess_net_2025_26_pct": -0.13,
+    "fama_macbeth_t": 7.12
   },
   "costs": "0.30% per trade (one-way), trades at the next day's open",
   "main_strategy": "Monthly, top 10%, keep while top 30%"
