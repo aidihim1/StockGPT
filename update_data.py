@@ -1,6 +1,6 @@
 # update_data.py -- fetches latest prices from Angel One and updates dataset.csv
 # Falls back to yfinance for any stock Angel One fails on
-# Run this before picks.py to keep data current (run_daily.bat does both)
+# Run this before ranking stocks to keep data current (once a month is enough for the monthly strategy)
 #
 # Each stock is fetched from ITS OWN last date (not the dataset-wide max), and the
 # last REPAIR_DAYS are always re-fetched, so days missed by earlier failed runs get
@@ -133,7 +133,7 @@ def update_data():
         print(f"\nChecking corporate actions for {len(cands)} stocks with large moves ...")
         save_actions(fetch_actions(cands, new_df["date"].min() - timedelta(days=10)))
 
-    # New ETFs list often; keep them out of the stock universe (picks.py excludes etf_symbols.csv)
+    # New ETFs list often; etf_symbols.csv keeps them out of the stock universe
     try:
         from etf_list import refresh_etfs
         n_etf = refresh_etfs()
@@ -150,7 +150,7 @@ def update_data():
     print(f"  Stocks        : {combined['stock'].nunique()}  (was {df['stock'].nunique()})")
     print(f"  Date range    : {combined['date'].min().date()} to {combined['date'].max().date()}")
     print(f"  Stocks up to date ({latest.max().date()}): {(latest == latest.max()).sum()}")
-    print("Done. Now run picks.py for fresh picks.")
+    print("Done. Data is up to date; re-rank stocks for fresh picks.")
 
 
 def _fetch_angel(api, token, start, to_date):

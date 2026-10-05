@@ -35,7 +35,7 @@ checkpoints/
 # Training logs per model
 training_log_*.csv
 
-# Generated picks (rerun picks.py)
+# Generated picks
 picks_*.csv
 # Personal holdings and interview notes
 my_holdings.csv
