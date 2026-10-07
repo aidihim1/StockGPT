@@ -1,0 +1,18 @@
+spec,variable,coef_ann_pct,t_stat,r2_pct,n_days
+"StockGPT, horizon 1",StockGPT,116.2,16.77,0.66,1178
+"StockGPT, horizon 2",StockGPT,21.52,4.84,0.31,1177
+"StockGPT, next open, 1 day(s)",StockGPT,22.53,5.38,0.31,1178
+"+ all controls, next open, 1 day(s)",StockGPT,11.98,2.86,2.09,1178
+"+ all controls, next open, 1 day(s)",ST_Rev,-43.39,-7.72,2.09,1178
+"+ all controls, next open, 1 day(s)",Mom,20.87,3.46,2.09,1178
+"+ all controls, next open, 1 day(s)",LT_Rev,-6.12,-1.19,2.09,1178
++ ST_Rev,StockGPT,118.97,17.42,1.38,1178
++ ST_Rev,ST_Rev,-32.84,-5.67,1.38,1178
++ Mom,StockGPT,107.76,16.03,1.1,1178
++ Mom,Mom,11.14,2.1,1.1,1178
++ LT_Rev,StockGPT,86.62,12.87,1.04,1178
++ LT_Rev,LT_Rev,-7.82,-1.63,1.04,1178
++ all controls,StockGPT,86.85,13.22,2.33,1178
++ all controls,ST_Rev,-34.42,-5.99,2.33,1178
++ all controls,Mom,8.69,1.49,2.33,1178
++ all controls,LT_Rev,-7.38,-1.5,2.33,1178

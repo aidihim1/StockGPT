@@ -1,4 +1,8 @@
 # fetch_data.py  —  fetches historical daily prices for all NSE stocks
+# First download: about 5 years of Angel One daily candles into raw_prices/ (one CSV per stock),
+# which build_dataset.py turns into dataset.csv. Needs config.py (Angel One credentials).
+#
+# Usage:  python fetch_data.py      (after fetch_symbols.py)
 
 import pandas as pd
 import time

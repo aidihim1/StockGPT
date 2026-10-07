@@ -1,4 +1,7 @@
 # fetch_old_data.py — pulls historical data via yfinance (free, no API key needed)
+# 2000-2019 daily prices (split- and dividend-adjusted) into raw_prices_old/, used by build_dataset.py.
+#
+# Usage:  python fetch_old_data.py      (after fetch_symbols.py)
 
 import yfinance as yf
 import pandas as pd

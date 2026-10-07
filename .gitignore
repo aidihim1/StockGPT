@@ -37,14 +37,18 @@ training_log_*.csv
 
 # Generated picks
 picks_*.csv
-# Personal holdings and interview notes
+# Personal holdings
 my_holdings.csv
-INTERVIEW_PREP.md
-PROJECT_STATUS.md
-CONCEPTS.md
 
 # Markdown notes stay local
 *.md
 
 # Keep all result tables in results/
 !results/**/*.csv
+
+# NSE daily bhavcopy downloads (fetch_bhavcopy.py)
+bhavcopy/
+gap_cache/
+
+# Half-written files from an interrupted save
+*.tmp

@@ -1,5 +1,8 @@
 # login.py  —  logs in and returns a working SmartAPI object
 
+import logging
+
+import logzero
 import pyotp
 from SmartApi import SmartConnect
 from config import API_KEY, CLIENT_ID, PASSWORD, TOTP_SECRET
@@ -7,7 +10,11 @@ from config import API_KEY, CLIENT_ID, PASSWORD, TOTP_SECRET
 def get_api():
     """Login to Angel One and return authenticated api object."""
     api = SmartConnect(api_key=API_KEY)
-    
+    # The library writes errors, with request headers (API key included), to logs/<date>/app.log
+    # and the console: switch both off
+    logzero.logfile(None)
+    logzero.loglevel(logging.CRITICAL)
+
     # Generate the one-time password automatically from your secret
     totp_code = pyotp.TOTP(TOTP_SECRET).now()
     

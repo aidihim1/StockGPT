@@ -1,8 +1,0 @@
-strategy,trades_per_year_pct,long_gross_ann_pct,long_net_ann_pct,universe_ann_pct,nifty_ann_pct,long_excess_net_ann_pct,long_excess_net_t,long_excess_net_sharpe,long_vs_nifty_net_ann_pct,breakeven_cost_pct,long_net_sharpe,long_net_mdd_pct,ls_net_ann_pct,ls_net_t,n_days,excess_net_select_2022_24_pct,t_select_2022_24,checkpoint,horizon,cost_pct
-"Daily, top 10%",8184.0,59.9,35.38,40.8,21.1,-5.42,-0.97,-1.06,14.5,0.234,2.02,-19.97,-4.6,-0.64,246,-5.42,-0.97,stockgpt_h20_train2022.pt,20,0.3
-"Daily, top 10%, keep while top 30%",1572.0,65.3,60.58,40.8,21.1,19.78,3.66,4.16,39.8,1.558,3.53,-14.56,43.1,6.22,246,19.78,3.66,stockgpt_h20_train2022.pt,20,0.3
-"Daily, top 10%, keep while top 50%",1132.0,61.7,58.34,40.8,21.1,17.54,3.38,4.09,37.5,1.849,3.53,-14.1,38.34,6.17,246,17.54,3.38,stockgpt_h20_train2022.pt,20,0.3
-"Weekly, top 10%, keep while top 30%",1008.0,63.4,60.34,40.8,21.1,19.54,3.99,4.2,39.5,2.239,3.54,-15.03,36.74,5.89,246,19.54,3.99,stockgpt_h20_train2022.pt,20,0.3
-"Monthly, top 10%",1246.0,56.4,52.69,40.8,21.1,11.89,1.9,2.23,31.8,1.254,3.02,-17.12,20.79,2.86,246,11.89,1.9,stockgpt_h20_train2022.pt,20,0.3
-"Monthly, top 10%, keep while top 30%",670.0,63.5,61.44,40.8,21.1,20.64,3.7,4.25,40.6,3.378,3.62,-14.21,31.27,6.05,246,20.64,3.7,stockgpt_h20_train2022.pt,20,0.3
-"Monthly, top 20 stocks, keep while top 10%",884.0,38.4,35.8,40.8,21.1,-5.0,-0.3,-0.38,14.8,-0.266,1.97,-18.76,44.32,2.79,246,-5.0,-0.3,stockgpt_h20_train2022.pt,20,0.3

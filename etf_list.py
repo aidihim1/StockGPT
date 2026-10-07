@@ -1,7 +1,7 @@
 # etf_list.py -- which symbols are ETFs (index, gold, silver, liquid/money-market funds), not companies
 #
-# The price data covers everything Angel One lists as NSE "-EQ", which includes ~360 ETFs. They are
-# kept in dataset.csv (NIFTYBEES is the Nifty benchmark) but excluded from the stock universe:
+# NSE's daily bhavcopies (and Angel One's "-EQ" symbol list) include ~360 ETFs. The ETFs listed here
+# are kept in dataset.csv (NIFTYBEES is the Nifty benchmark) but excluded from the stock universe:
 # a liquid fund is cash, not a stock.
 #
 # etf_symbols.csv columns: stock, source
@@ -12,7 +12,7 @@
 # Also keeps nse_series.csv (stock, series): each listed company's current NSE series, EQ or BE/BZ
 # (trade-for-trade: delivery only, often under surveillance or non-compliant), shown with the picks.
 #
-# Usage:  python etf_list.py      # refresh both from NSE (update_data.py also does this)
+# Usage:  python etf_list.py      # refresh both from NSE (update_prices.py and update_data.py also do this)
 
 import io
 import os

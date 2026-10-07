@@ -5,13 +5,15 @@
 # new listings. BE/BZ stocks are often ones that did badly, so leaving them out of the history flatters
 # backtests, like survivorship bias. This script:
 #   1. reads NSE's official equity list (EQUITY_L.csv) and finds companies not in dataset.csv
-#   2. adds them to nse_symbols.csv with their Angel One token, so update_data.py keeps them current
-#   3. downloads their history from Yahoo, prepared like the rest of the data:
+#   2. downloads their history from Yahoo, prepared like the rest of the data:
 #        2000-2019: split- and dividend-adjusted closes (as fetch_old_data.py)
-#        Apr 2021 on: raw closes, splits recorded in corporate_actions.csv (as Angel One + update_data.py)
-#        nothing in between (the same Jan 2020 - Apr 2021 gap as every other stock)
+#        Apr 2021 on: raw closes, splits recorded in corporate_actions.csv (as update_data.py)
+#        nothing in between (Jan 2020 - Apr 2021 comes from fill_gap_2020.py)
 #      and stops at the dataset's last date, so every stock ends on the same day
-#   4. runs clean() on the combined dataset and saves it (written to a temp file first)
+#   3. runs clean() on the combined dataset and saves it (written to a temp file first)
+#   4. only then adds them to nse_symbols.csv with their Angel One token, so update_data.py and
+#      fill_gap_2020.py can fetch them
+# From 12 Apr 2021 on, rebuild_from_bhavcopy.py later replaces these prices with NSE's own.
 #
 # Usage:  python add_symbols.py            (python add_symbols.py --dry_run to only list them)
 
@@ -24,10 +26,9 @@ import pandas as pd
 import requests
 
 from clean_data import clean
-from etf_list import HEADERS
+from etf_list import HEADERS, NSE_EQUITY_URL
 from update_data import COLS, DATA_FILE, _fetch_yfinance_batch, _finish, _round_df
 
-NSE_EQUITY_URL   = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
 ANGEL_MASTER_URL = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
 OLD_END     = pd.Timestamp("2020-01-01")   # Yahoo adjusted history used before this date
 ANGEL_START = pd.Timestamp("2021-04-12")   # raw prices from this date
@@ -111,12 +112,6 @@ def main(args):
         print(missing.to_string(index=False))
         return
 
-    sym = pd.read_csv("nse_symbols.csv")
-    rows = angel_rows(set(missing["stock"]) - set(sym["clean_symbol"]))
-    if len(rows):
-        pd.concat([sym, rows], ignore_index=True).to_csv("nse_symbols.csv", index=False)
-    print(f"Added {len(rows)} symbols with Angel One tokens to nse_symbols.csv")
-
     symbols = missing["stock"].tolist()
     old_syms = missing.loc[missing["listed"] < OLD_END, "stock"].tolist()
     print(f"\nDownloading 2000-2019 history for {len(old_syms)} stocks listed before 2020 ...")
@@ -128,7 +123,12 @@ def main(args):
     recent = {s: t for s, t in recent.items() if t is not None}
     print(f"  got {len(recent)}; no data on Yahoo: {len(failed)} {failed[:20]}")
 
-    new = pd.concat(list(old.values()) + list(recent.values()), ignore_index=True)
+    frames = list(old.values()) + list(recent.values())
+    if not frames:
+        print(f"No prices up to {last_day.date()} for these stocks (new listings, or Yahoo rate-limiting); "
+              "nothing changed. Data updates will pick up new listings once they are in nse_symbols.csv.")
+        return
+    new = pd.concat(frames, ignore_index=True)
     added = sorted(set(new["stock"]))
     combined = pd.concat([df, _round_df(new)], ignore_index=True).drop_duplicates(["date", "stock"], keep="first")
     combined = clean(combined)
@@ -137,6 +137,13 @@ def main(args):
     os.replace(tmp, DATA_FILE)
     print(f"\nAdded {len(added)} stocks, {len(new):,} rows. {DATA_FILE}: {len(combined):,} rows, "
           f"{combined['stock'].nunique():,} symbols, {combined['date'].min().date()} to {combined['date'].max().date()}")
+
+    # Only now (data saved) add them to the symbol list, so data updates keep them current
+    sym = pd.read_csv("nse_symbols.csv")
+    rows = angel_rows(set(missing["stock"]) - set(sym["clean_symbol"]))
+    if len(rows):
+        pd.concat([sym, rows], ignore_index=True).to_csv("nse_symbols.csv", index=False)
+    print(f"Added {len(rows)} symbols with Angel One tokens to nse_symbols.csv")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,7 @@
 # fetch_symbols.py  —  downloads the master list of all tradable symbols
+# Saves nse_symbols.csv: NSE cash-equity symbols (EQ, BE, BZ series) with their Angel One tokens.
+#
+# Usage:  python fetch_symbols.py
 
 import requests
 import pandas as pd

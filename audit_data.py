@@ -51,7 +51,9 @@ def main(args):
     thin = cnt[(cnt < 0.8 * med) & ~cnt.index.isin(wk.index)]
     print(f"   {ok(len(thin) <= 3)}weekdays with unusually few stocks: "
           f"{ {str(k.date()): int(v) for k, v in thin.items()} }")
-    print(f"   -- known gap: no data 2020-01-01 -> 2021-04-12 (between Yahoo and Angel One history)")
+    g20 = df[(df.date >= "2020-01-01") & (df.date < ANGEL_START)]
+    print(f"   -- 2020-01-01 -> 2021-04-11 (filled from Angel One by fill_gap_2020.py): "
+          f"{len(g20):,} rows, {g20.stock.nunique():,} stocks, {g20.date.nunique()} days")
 
     print("\n4. MISSING DAYS PER STOCK (since Apr 2021, between each stock's first and last date)")
     mkt = cnt[cnt >= 0.5 * med].index

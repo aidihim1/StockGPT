@@ -1,11 +1,11 @@
 test,sharpe,mean_ann_pct,start,end,checkpoint,rank_corr_with_todays_return
-BASELINE (close t -> close t+1),19.71,205.83,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-no-trade days = 0%,19.6,204.36,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-realised returns winsorised at +/-5%,22.59,183.19,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-median instead of mean within each leg,13.29,149.33,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-drop the best 10% of days,21.37,172.48,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-pure 1-day reversal: buy today's losers,-5.36,-78.59,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-StockGPT with 1-day reversal removed,13.32,119.12,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-exclude stocks locked on t or t+1,14.79,149.67,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-trade at next OPEN (open t+1 -> close t+1),2.39,20.72,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
-overnight gap only (close t -> open t+1),29.02,183.94,2022-05-02,2026-10-01,stockgpt_train2021.pt,0.513
+BASELINE (close t -> close t+1),19.87,221.59,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+no-trade days = 0%,19.87,221.61,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+realised returns winsorised at +/-5%,21.98,195.78,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+median instead of mean within each leg,12.38,160.89,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+drop the best 10% of days,22.09,184.41,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+pure 1-day reversal: buy today's losers,-6.07,-89.29,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+StockGPT with 1-day reversal removed,13.22,125.43,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+exclude stocks locked on t or t+1,15.4,159.13,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+trade at next OPEN (open t+1 -> close t+1),1.18,10.53,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536
+overnight gap only (close t -> open t+1),25.45,210.13,2022-01-03,2026-10-05,stockgpt_train2021.pt,0.536

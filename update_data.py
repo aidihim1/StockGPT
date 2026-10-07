@@ -1,10 +1,15 @@
 # update_data.py -- fetches latest prices from Angel One and updates dataset.csv
 # Falls back to yfinance for any stock Angel One fails on
-# Run this before ranking stocks to keep data current (once a month is enough for the monthly strategy)
+# The regular update is update_prices.py (NSE's bhavcopies); this is the fallback when NSE's
+# archive is unavailable.
 #
 # Each stock is fetched from ITS OWN last date (not the dataset-wide max), and the
 # last REPAIR_DAYS are always re-fetched, so days missed by earlier failed runs get
 # filled in. Stocks in nse_symbols.csv but not yet in dataset.csv are added.
+#
+# Usage:  python update_data.py      (needs config.py for Angel One; without it, Yahoo only)
+
+import os
 
 import pandas as pd
 import numpy as np
@@ -24,6 +29,7 @@ YF_BATCH       = 25           # tickers per yfinance batch (Yahoo rate-limits la
 YF_PAUSE       = 2            # seconds between yfinance batches
 YF_PASSES      = 4            # retry passes for symbols Yahoo failed on
 DATA_FILE      = "dataset.csv"
+ANGEL_HOST     = "apiconnect.angelone.in"   # SmartAPI production endpoint
 COLS           = ["date", "stock", "open", "high", "low", "close", "volume", "return_1d"]
 
 
@@ -44,12 +50,15 @@ def update_data():
     # 2. Login (optional -- fall back to yfinance if Angel One is unavailable)
     print("Logging in to Angel One ...")
     api = None
-    try:
-        from login import get_api   # needs config.py (Angel One credentials)
-        api = get_api()
-        print("  Angel One login successful.")
-    except Exception as e:
-        print(f"  Angel One login failed ({type(e).__name__}: {e}). Using yfinance only.")
+    if not _reachable(ANGEL_HOST):
+        print(f"  {ANGEL_HOST} is not reachable. Using yfinance only.")
+    else:
+        try:
+            from login import get_api   # needs config.py (Angel One credentials)
+            api = get_api()
+            print("  Angel One login successful.")
+        except Exception as e:
+            print(f"  Angel One login failed ({type(e).__name__}: {e}). Using yfinance only.")
 
     # 3. Symbols (skip iNAV tickers -- indicative NAVs, not tradable, no candles)
     symbols_df = pd.read_csv("nse_symbols.csv")
@@ -158,6 +167,16 @@ def update_data():
     print("Done. Data is up to date; re-rank stocks for fresh picks.")
 
 
+def _reachable(host, port=443, timeout=5):
+    """Quick connection test, so an unreachable API fails in seconds instead of minutes of retries."""
+    import socket
+    try:
+        socket.create_connection((host, port), timeout=timeout).close()
+        return True
+    except OSError:
+        return False
+
+
 def _fetch_angel(api, token, start, to_date):
     """Fetch daily candles from Angel One, retrying on rate limits. Returns DataFrame or None."""
     params = {
@@ -250,12 +269,36 @@ def _finish(tmp, symbol, cutoff):
     return tmp[COLS] if len(tmp) > 0 else None
 
 
+def safe_merge(old: pd.DataFrame, new: pd.DataFrame, tol: float = 0.02, verbose: bool = True) -> pd.DataFrame:
+    """Combine stored rows with re-fetched ones.
+    Angel One back-adjusts its price history for later splits and bonus issues, so a re-fetch can put
+    older days on a different scale from what is stored; stitching them would create fake one-day
+    crashes. Per stock, closes are compared on the days both have: rows that agree (within `tol`)
+    replace the stored ones, and missing days are filled only after the last disagreeing day.
+    Days after the stored data ends are always added (they are on the current, raw basis)."""
+    new = new.drop_duplicates(["date", "stock"], keep="last")
+    last_old = old.groupby("stock")["date"].max()
+    both = new.merge(old[["date", "stock", "close"]], on=["date", "stock"], how="left", suffixes=("", "_old"))
+    bad = both["close_old"].notna() & ((both["close"] / both["close_old"] - 1).abs() > tol)
+    last_bad = both[bad].groupby("stock")["date"].max()
+    after_end = both["date"] > both["stock"].map(last_old).fillna(pd.Timestamp.min)
+    consistent = both["date"] > both["stock"].map(last_bad).fillna(pd.Timestamp.min)
+    keep = after_end | consistent
+    if verbose and bad.any():
+        print(f"  re-fetched prices on a different scale (back-adjusted history) for {last_bad.size} stocks; "
+              f"kept the stored prices for {int((~keep).sum()):,} rows", flush=True)
+    accepted = new[keep.values]
+    out = pd.concat([old, accepted], ignore_index=True)
+    return out.drop_duplicates(["date", "stock"], keep="last")
+
+
 def _save(df, new_rows):
     new_df   = _round_df(pd.concat(new_rows, axis=0, ignore_index=True))
-    combined = pd.concat([df, new_df], axis=0, ignore_index=True)
-    combined = combined.drop_duplicates(subset=["date", "stock"], keep="last")
+    combined = safe_merge(df, new_df)
     combined = clean(combined)
-    combined.to_csv(DATA_FILE, index=False)
+    tmp = DATA_FILE + ".tmp"
+    combined.to_csv(tmp, index=False)               # write a temp file first: readers never see half a file
+    os.replace(tmp, DATA_FILE)
     return combined
 
 

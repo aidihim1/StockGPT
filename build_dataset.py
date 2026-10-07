@@ -1,9 +1,14 @@
-# build_dataset.py -- rebuilds the dataset in clean long format
+# build_dataset.py -- first build of dataset.csv in long format, from the raw downloads:
+#   raw_prices/      Angel One daily candles (fetch_data.py)
+#   raw_prices_old/  Yahoo Finance history before 2020 (fetch_old_data.py)
 #
 # Output: dataset.csv with columns:
 #   date, stock, open, high, low, close, volume, return_1d
 #
-# Each row = one stock on one date. No empty cells, no wide commas mess.
+# Each row = one stock on one date. Later steps add to and replace parts of this file
+# (fill_gap_2020.py, add_symbols.py, rebuild_from_bhavcopy.py).
+#
+# Usage:  python build_dataset.py
 
 import pandas as pd
 import numpy as np
